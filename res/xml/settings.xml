@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+        
+xmlns:android="http://schemas.android.com/apk/res/android">
+    <CheckBoxPreference android:title="Statusbar icon" android:summary="Show an icon in the statusbar when the push service is running" android:key="icon"/>
+    <RingtonePreference android:title="Notification sound" android:summary="Choose a sound for push notifications" android:showDefault="true" android:showSilent="true" android:ringtoneType="notification" android:key="sound"/>
+</PreferenceScreen>
