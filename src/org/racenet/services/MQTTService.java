@@ -108,14 +108,6 @@ public class MQTTService extends Service {
 	/* Listener callback */
     public void onDisconnect() {
     
-    	Notification notification = new Notification(R.drawable.error, "", System.currentTimeMillis());
-    	notification.sound = Uri.parse(db.get("sound"));
-		notification.flags |= Notification.FLAG_AUTO_CANCEL;
-        Intent notifyIntent = new Intent(getApplicationContext(), MQTTService.class);
-        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        PendingIntent contentIntent = PendingIntent.getActivity(getApplicationContext(), 0, notifyIntent, 0);
-        notification.setLatestEventInfo(getApplicationContext(), "Racenet Disconnected ", "", contentIntent);
-        MQTTService.this.manager.notify(ERROR_NOTIFICATION, notification);
     }
     
     /* Listener callback */

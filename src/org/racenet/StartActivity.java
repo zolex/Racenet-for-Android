@@ -20,6 +20,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.MenuItem.OnMenuItemClickListener;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 /**
  * Main Screen of the application
@@ -61,14 +62,12 @@ public class StartActivity extends Activity {
         
         WebView ranking = (WebView)findViewById(R.id.ranking);
         ranking.setBackgroundColor(0x00000000);
-        /*
         ranking.setWebViewClient(new WebViewClient() {
         	
         	@Override
         	public void onPageFinished(WebView view, String url) {
         	       
         		pd.dismiss();
-        		*/
                 String userID = db.get("user_id");
                 String username = db.get("user_name");
                 
@@ -91,7 +90,6 @@ public class StartActivity extends Activity {
 	    		        .setNeutralButton("OK", null)
 	    		        .show();
                 }
-                /*
         	}
 
         });
@@ -99,7 +97,6 @@ public class StartActivity extends Activity {
 		pd.show();
 		
         ranking.loadUrl("http://www.warsow-race.net/ranking/android/num/100");
-        */
     }
 	
 	public static boolean isServiceRunning(String serviceClassName, Context context){
