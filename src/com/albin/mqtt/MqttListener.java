@@ -19,6 +19,8 @@ public interface MqttListener {
 	
 	void connected();
 	
+	void pong();
+	
 	void disconnected();
 	
 	void publishArrived(String topic, byte[] data);

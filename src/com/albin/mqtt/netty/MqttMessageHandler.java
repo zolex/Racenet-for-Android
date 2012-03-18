@@ -24,6 +24,7 @@ import org.jboss.netty.channel.SimpleChannelHandler;
 import com.albin.mqtt.MqttListener;
 import com.albin.mqtt.message.ConnAckMessage;
 import com.albin.mqtt.message.Message;
+import com.albin.mqtt.message.PingRespMessage;
 import com.albin.mqtt.message.PublishMessage;
 
 public class MqttMessageHandler extends SimpleChannelHandler {
@@ -63,13 +64,24 @@ public class MqttMessageHandler extends SimpleChannelHandler {
 		case PUBLISH:
 			handleMessage((PublishMessage) msg);
 			break;
+		case PINGRESP:
+			handleMessage((PingRespMessage) msg);
+			break;
 		default:
 			break;
 		}
 	}
 
 	private void handleMessage(ConnAckMessage msg) {
-		// What to do here?
+		if (listener != null) {
+			listener.connected();
+		}
+	}
+	
+	private void handleMessage(PingRespMessage msg) {
+		if (listener != null) {
+			listener.pong();
+		}
 	}
 
 	private void handleMessage(PublishMessage msg) {

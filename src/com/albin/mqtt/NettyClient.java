@@ -44,9 +44,15 @@ public class NettyClient {
 	private final String id;
 	private MqttListener listener;
 	private MqttMessageHandler handler;
+	private int keepAlive = 30;
 
 	public NettyClient(String id) {
 		this.id = id;
+	}
+	
+	public void setKeepAlive(int s) {
+		
+		keepAlive = s;
 	}
 	
 	public void setListener(MqttListener listener) {
@@ -87,10 +93,8 @@ public class NettyClient {
 			return;
 		}
 
-		channel.write(new ConnectMessage(id, true, 30));
+		channel.write(new ConnectMessage(id, true, keepAlive));
 		// TODO: Should probably wait for the ConnAck message
-		
-		listener.connected();
 	}
 
 	/* (non-Javadoc)
@@ -100,8 +104,6 @@ public class NettyClient {
 		channel.write(new DisconnectMessage()).awaitUninterruptibly();
 		channel.close().awaitUninterruptibly();
 		bootstrap.releaseExternalResources();
-		
-		listener.disconnected();
 	}
 
 	/* (non-Javadoc)
