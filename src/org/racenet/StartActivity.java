@@ -39,6 +39,8 @@ public class StartActivity extends Activity {
 	@Override
     public void onCreate(Bundle savedInstanceState) {
     	
+		super.onCreate(savedInstanceState);
+		
 		// workaround to avoid multiple instances of this activity
 		if (!isTaskRoot()) {
 		    final Intent intent = getIntent();
@@ -49,7 +51,6 @@ public class StartActivity extends Activity {
 		    }
 		}
 		
-        super.onCreate(savedInstanceState);        
         this.setContentView(R.layout.start);
        
         //deleteDatabase("org.racenet.db");
