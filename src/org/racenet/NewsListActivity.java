@@ -64,14 +64,16 @@ public class NewsListActivity extends ExpandableListActivity {
     @Override
     public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
     	
-        menu.setHeaderTitle("News menu");
-        menu.add(0, 0, 0, "Delete news entry");
+		ExpandableListContextMenuInfo info = (ExpandableListContextMenuInfo)menuInfo;       
+		final String title = ((TextView)info.targetView).getText().toString();
+		menu.setHeaderTitle(title);
+		menu.add(0, 0, 0, "Delete");
     }
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
     	
-        ExpandableListContextMenuInfo info = (ExpandableListContextMenuInfo) item.getMenuInfo();        
+        ExpandableListContextMenuInfo info = (ExpandableListContextMenuInfo) item.getMenuInfo();       
         final String title = ((TextView)info.targetView).getText().toString();
         final int groupPos = ExpandableListView.getPackedPositionGroup(info.packedPosition);       	
         
