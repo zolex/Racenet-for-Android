@@ -31,6 +31,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 
 public class MQTTService extends Service {
 	
@@ -38,6 +39,7 @@ public class MQTTService extends Service {
     private Database db;
     private static NettyClient client;
     private Timer pinger;
+    private boolean waitingForPong = false;
     
     public static final String UPDATE_NEWS_ACTION = "org.racenet.MQTTService.updateNewsAction";
     private final Handler broadcastHandler = new Handler();
@@ -109,11 +111,19 @@ public class MQTTService extends Service {
 			@Override
 			public void run() {
 				
-				client.ping();
+				if (!waitingForPong) {
+					
+					client.ping();
+					waitingForPong = true;
+				
+				} else {
+					
+					Log.d("PINGPONG", "Did not receive a pong before next ping, maybe the connection is down.");
+				}
 			}
 		}, interval, interval);
     }
-    
+	
 	/* Listener callback */
     public void onDisconnect() {
     
@@ -123,6 +133,8 @@ public class MQTTService extends Service {
     /* Listener callback */
     public void onPong() {
     	
+    	waitingForPong = false;
+    	Log.d("PINGPONG", "Received pong :)");
     }
 
     public static Notification getServiceNotification(Context intentContext, Context pendingContext) {
