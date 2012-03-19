@@ -42,6 +42,7 @@ public class SettingsActivity extends PreferenceActivity {
 						
 						manager.cancel(MQTTService.SERVICE_NOTIFICATION);
 					}
+
 				} 
 				
 				db.set(pref.getKey(), value.toString());
