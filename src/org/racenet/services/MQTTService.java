@@ -102,6 +102,7 @@ public class MQTTService extends Service {
 			manager.notify(SERVICE_NOTIFICATION,  MQTTService.getServiceNotification(getApplicationContext(), MQTTService.this));
 		}
 		
+		int interval = Integer.parseInt(db.get("ping"));
 		pinger = new Timer();
 		pinger.schedule(new TimerTask() {
 			
@@ -110,7 +111,7 @@ public class MQTTService extends Service {
 				
 				client.ping();
 			}
-		}, 3000, 3000);
+		}, interval, interval);
     }
     
 	/* Listener callback */

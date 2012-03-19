@@ -25,7 +25,7 @@ public class Database extends SQLiteOpenHelper {
     	
         db.execSQL("CREATE TABLE settings(key TEXT, value TEXT, PRIMARY KEY(key))");
         
-        for (String key: new String[]{"user_name", "user_id", "user_flags", "icon", "sound"}) {
+        for (String key: new String[]{"user_name", "user_id", "user_flags", "icon", "sound", "ping"}) {
         
 	        ContentValues values = new ContentValues();
 	        values.put("key", key);
@@ -33,6 +33,8 @@ public class Database extends SQLiteOpenHelper {
 	        	values.put("value", "content://settings/system/notification_sound");
 	        } else if(key.equals("icon")) {
 	        	values.put("value", "true");
+	        } else if(key.equals("ping")) {
+	        	values.put("value", "3000");
 	        } else {
 	        	values.put("value", "");
 	        }

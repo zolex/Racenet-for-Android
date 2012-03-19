@@ -4,6 +4,7 @@ import org.racenet.models.Database;
 import org.racenet.services.MQTTService;
 import org.racenet.R;
 
+import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.os.Bundle;
 import android.preference.Preference;
@@ -43,7 +44,25 @@ public class SettingsActivity extends PreferenceActivity {
 						manager.cancel(MQTTService.SERVICE_NOTIFICATION);
 					}
 
-				} 
+				} else if (pref.getKey().equals("ping")) {
+					
+					if(!value.toString().matches("^[0-9]+$")) {
+						
+						new AlertDialog.Builder(SettingsActivity.this)
+	        		        .setMessage("Must be a numeric value.")
+	        		        .setNeutralButton("OK", null)
+	        		        .show();
+						
+						return false;
+						
+					} else {
+						
+						new AlertDialog.Builder(SettingsActivity.this)
+	        		        .setMessage("Logout and login to apply the change.")
+	        		        .setNeutralButton("OK", null)
+	        		        .show();
+					}
+				}
 				
 				db.set(pref.getKey(), value.toString());
 				return true;
@@ -52,5 +71,6 @@ public class SettingsActivity extends PreferenceActivity {
         
 		findPreference("icon").setOnPreferenceChangeListener(listener);
 		findPreference("sound").setOnPreferenceChangeListener(listener);
+		findPreference("ping").setOnPreferenceChangeListener(listener);
     }
 }

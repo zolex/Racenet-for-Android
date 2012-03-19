@@ -4,4 +4,5 @@
 xmlns:android="http://schemas.android.com/apk/res/android">
     <CheckBoxPreference android:title="Statusbar icon" android:summary="Show an icon in the statusbar when logged in and the push service is running" android:key="icon" android:defaultValue="true"/>
     <RingtonePreference android:title="Notification sound" android:summary="Choose a sound for push notifications" android:showDefault="true" android:showSilent="true" android:ringtoneType="notification" android:key="sound" android:defaultValue="content://settings/system/notification_sound"/>
+    <EditTextPreference android:key="ping" android:summary="Set the ping interval in milliseconds" android:title="Ping interval" android:defaultValue="3000" />
 </PreferenceScreen>
