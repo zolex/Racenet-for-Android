@@ -23,9 +23,9 @@ public class Database extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
     	
-        db.execSQL("CREATE TABLE settings(key TEXT, value TEXT)");
+        db.execSQL("CREATE TABLE settings(key TEXT, value TEXT, PRIMARY KEY(key))");
         
-        for (String key: new String[]{"user_name", "user_id", "user_flags", "icon", "sound", "forum"}) {
+        for (String key: new String[]{"user_name", "user_id", "user_flags", "icon", "sound"}) {
         
 	        ContentValues values = new ContentValues();
 	        values.put("key", key);
@@ -33,8 +33,6 @@ public class Database extends SQLiteOpenHelper {
 	        	values.put("value", "content://settings/system/notification_sound");
 	        } else if(key.equals("icon")) {
 	        	values.put("value", "true");
-	        } else if(key.equals("forum")) {
-	        	values.put("value", "false");
 	        } else {
 	        	values.put("value", "");
 	        }
@@ -42,7 +40,6 @@ public class Database extends SQLiteOpenHelper {
         }
 		
         db.execSQL("CREATE TABLE news(id INTEGER, title TEXT, body TEXT, PRIMARY KEY(id))");
-        db.execSQL("CREATE TABLE posts(id INTEGER, subject TEXT, poster TEXT, body TEXT)");
     }
 
 	@Override

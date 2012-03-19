@@ -42,22 +42,7 @@ public class SettingsActivity extends PreferenceActivity {
 						
 						manager.cancel(MQTTService.SERVICE_NOTIFICATION);
 					}
-				
-				} /*else if (pref.getKey().equals("forum")) {
-					
-					if (Start.isServiceRunning("racenet.racenet.MQTTService", getApplicationContext())) {
-						
-						if (value.toString().equals("false")) {
-						
-							MQTTService.unsubscribeForum();
-							
-						} else {
-							
-							MQTTService.subscribeForum();
-						}
-				        
-					}
-				}*/
+				} 
 				
 				db.set(pref.getKey(), value.toString());
 				return true;

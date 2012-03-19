@@ -53,7 +53,7 @@ public class StartActivity extends Activity {
 		
         this.setContentView(R.layout.start);
        
-        //deleteDatabase("org.racenet.db");
+        deleteDatabase("org.racenet.db");
         db = new Database(getApplicationContext());
         
         final ProgressDialog pd = new ProgressDialog(this);

@@ -2,6 +2,8 @@ package org.racenet.services;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -35,6 +37,7 @@ public class MQTTService extends Service {
     private NotificationManager manager;
     private Database db;
     private static NettyClient client;
+    private Timer pinger;
     
     public static final String UPDATE_NEWS_ACTION = "org.racenet.MQTTService.updateNewsAction";
     private final Handler broadcastHandler = new Handler();
@@ -52,8 +55,7 @@ public class MQTTService extends Service {
     	manager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         db = new Database(getApplicationContext());
         
-        String userID = db.get("user_id");
-        if (userID == "") {
+        if (db.get("user_id").equals("")) {
         	
         	return;
         }
@@ -62,17 +64,6 @@ public class MQTTService extends Service {
     	client.setKeepAlive(0);
 		client.setListener(new MQTTListener(this));
     	client.connect("78.46.92.230", 1883);
-		client.subscribe("user_"+ userID);
-		client.subscribe("news");
-		if(db.get("forum").equals("true")) {
-			
-			MQTTService.subscribeForum();
-		}
-		
-		if(db.get("icon").equals("true")) {
-			
-			manager.notify(SERVICE_NOTIFICATION,  MQTTService.getServiceNotification(getApplicationContext(), MQTTService.this));
-		}
     }
     
     @Override
@@ -103,11 +94,29 @@ public class MQTTService extends Service {
 	/* Listener callback */
 	public void onConnect() {
     	
+		client.subscribe("user_"+ db.get("user_id"));
+		client.subscribe("news");
+		
+		if(db.get("icon").equals("true")) {
+			
+			manager.notify(SERVICE_NOTIFICATION,  MQTTService.getServiceNotification(getApplicationContext(), MQTTService.this));
+		}
+		
+		pinger = new Timer();
+		pinger.schedule(new TimerTask() {
+			
+			@Override
+			public void run() {
+				
+				client.ping();
+			}
+		}, 3000, 3000);
     }
     
 	/* Listener callback */
     public void onDisconnect() {
     
+    	pinger.cancel();
     }
     
     /* Listener callback */
@@ -125,16 +134,6 @@ public class MQTTService extends Service {
         PendingIntent contentIntent = PendingIntent.getActivity(pendingContext, 0, notifyIntent, 0);
         notification.setLatestEventInfo(pendingContext, "Racenet ", null, contentIntent);
         return notification;
-    }
-    
-    public static void unsubscribeForum() {
-    	
-    	client.unsubscribe("forum");
-    }
-    
-    public static void subscribeForum() {
-    	
-    	client.subscribe("forum");
     }
 	
 	public void receiveMessage(String topic, String xml) {
@@ -191,37 +190,6 @@ public class MQTTService extends Service {
 			    	}
 			    });
 				
-			} else if (topic.equals("forum")) {
-				
-				if (doc.getElementsByTagName("post").getLength() == 0) {
-					
-					return;
-				}
-				
-				Node post = doc.getElementsByTagName("post").item(0);
-				
-				if (post.getChildNodes().getLength() != 3) {
-					
-					return;
-				}
-				
-				String subject = post.getChildNodes().item(0).getFirstChild().getNodeValue();
-				String poster = post.getChildNodes().item(1).getFirstChild().getNodeValue();
-				String body = post.getChildNodes().item(2).getFirstChild().getNodeValue();
-				
-				db.addPost(subject, poster, body);
-				String num = db.countPosts();
-				
-				Notification notification = new Notification(R.drawable.news, null, System.currentTimeMillis());
-				notification.sound = Uri.parse(db.get("sound"));
-				notification.flags |= Notification.FLAG_AUTO_CANCEL;
-				Intent notifyIntent = new Intent(getApplicationContext(), NewsListActivity.class);
-		        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-				PendingIntent contentIntent = PendingIntent.getActivity(MQTTService.this, 0, notifyIntent, 0);
-				notification.setLatestEventInfo(MQTTService.this, "Racenet Forum", num + " new post" + (num.equals("1") ? "" : "s"), contentIntent);
-				MQTTService.this.manager.notify(NEWS_NOTIFICATION, notification);
-				
-			
 			} else { // user_x:private message
 				
 				Notification notification = new Notification(R.drawable.pokal, null, System.currentTimeMillis());
