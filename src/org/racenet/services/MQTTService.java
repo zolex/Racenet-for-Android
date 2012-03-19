@@ -38,7 +38,7 @@ public class MQTTService extends Service {
     private NotificationManager manager;
     private Database db;
     private static NettyClient client;
-    private Timer pinger;
+    private Timer pinger = new Timer();
     private boolean waitingForPong = false;
     
     public static final String UPDATE_NEWS_ACTION = "org.racenet.MQTTService.updateNewsAction";
@@ -56,16 +56,8 @@ public class MQTTService extends Service {
     	super.onCreate();
     	manager = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         db = new Database(getApplicationContext());
-        
-        if (db.get("user_id").equals("")) {
-        	
-        	return;
-        }
-    	
-    	client = new NettyClient("android_" + db.get("user_name"));
-    	client.setKeepAlive(0);
-		client.setListener(new MQTTListener(this));
-    	client.connect("78.46.92.230", 1883);
+		
+        connect();
     }
     
     @Override
@@ -81,6 +73,7 @@ public class MQTTService extends Service {
     	super.onDestroy();
     	
     	client.disconnect();
+    	pinger.cancel();
     	
     	manager.cancel(SERVICE_NOTIFICATION);
         manager.cancel(RECORD_NOTIFICATION);
@@ -93,19 +86,19 @@ public class MQTTService extends Service {
 		return null;
 	}
 	
-	/* Listener callback */
-	public void onConnect() {
+	private boolean connect() {
+		
+        if (db.get("user_id").equals("")) {
+        	
+        	return false;
+        }
+		
+        client = new NettyClient("android_" + db.get("user_name"));
+    	client.setKeepAlive(0);
+		client.setListener(new MQTTListener(this));
+    	client.connect("78.46.92.230", 1883);
     	
-		client.subscribe("user_"+ db.get("user_id"));
-		client.subscribe("news");
-		
-		if(db.get("icon").equals("true")) {
-			
-			manager.notify(SERVICE_NOTIFICATION,  MQTTService.getServiceNotification(getApplicationContext(), MQTTService.this));
-		}
-		
-		int interval = Integer.parseInt(db.get("ping"));
-		pinger = new Timer();
+    	int interval = Integer.parseInt(db.get("ping"));
 		pinger.schedule(new TimerTask() {
 			
 			@Override
@@ -115,26 +108,45 @@ public class MQTTService extends Service {
 					
 					client.ping();
 					waitingForPong = true;
+					Log.d("MQTT", "Ping sent");
 				
 				} else {
 					
-					Log.d("PINGPONG", "Did not receive a pong before next ping, maybe the connection is down.");
+					Log.d("MQTT", "Connection lost, trying to reconnect");
+					waitingForPong = false;
+					cancel();
+					connect();
 				}
 			}
 		}, interval, interval);
+		
+    	return true;
+	}
+	
+	/* Listener callback */
+	public void onConnect() {
+    	
+		Log.d("MQTT", "Connected");
+		
+		client.subscribe("user_"+ db.get("user_id"));
+		client.subscribe("news");
+		if(db.get("icon").equals("true")) {
+			
+			manager.notify(SERVICE_NOTIFICATION, MQTTService.getServiceNotification(getApplicationContext(), MQTTService.this));
+		}
     }
 	
 	/* Listener callback */
     public void onDisconnect() {
     
-    	pinger.cancel();
+    	Log.d("MQTT", "Disconnected");
     }
     
     /* Listener callback */
     public void onPong() {
     	
     	waitingForPong = false;
-    	Log.d("PINGPONG", "Received pong :)");
+    	Log.d("MQTT", "Received pong");
     }
 
     public static Notification getServiceNotification(Context intentContext, Context pendingContext) {
@@ -205,14 +217,32 @@ public class MQTTService extends Service {
 				
 			} else { // user_x:private message
 				
-				Notification notification = new Notification(R.drawable.pokal, null, System.currentTimeMillis());
-				notification.sound = Uri.parse(db.get("sound"));
-				notification.flags |= Notification.FLAG_AUTO_CANCEL;
-				Intent notifyIntent = new Intent(getApplicationContext(), StartActivity.class);
-		        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-				PendingIntent contentIntent = PendingIntent.getActivity(MQTTService.this, 0, notifyIntent, 0);
-				notification.setLatestEventInfo(MQTTService.this, "New record", xml, contentIntent);
-				MQTTService.this.manager.notify(RECORD_NOTIFICATION, notification);
+				if (doc.getElementsByTagName("record").getLength() == 1) {
+					
+					Node record = doc.getElementsByTagName("record").item(0);
+					if (record.getChildNodes().getLength() != 5) {
+						
+						return;
+					}
+					
+					String player = record.getChildNodes().item(0).getFirstChild().getNodeValue();
+					String map = record.getChildNodes().item(1).getFirstChild().getNodeValue();
+					String time = record.getChildNodes().item(2).getFirstChild().getNodeValue();
+					String oldPoints = record.getChildNodes().item(3).getFirstChild().getNodeValue();
+					String newPoints = record.getChildNodes().item(4).getFirstChild().getNodeValue();
+					
+					int points = (Integer.parseInt(oldPoints) - Integer.parseInt(newPoints));
+					String message = player + " stole " + points + " points on " + map;
+					
+					Notification notification = new Notification(R.drawable.pokal, null, System.currentTimeMillis());
+					notification.sound = Uri.parse(db.get("sound"));
+					notification.flags |= Notification.FLAG_AUTO_CANCEL;
+					Intent notifyIntent = new Intent(getApplicationContext(), StartActivity.class);
+			        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+					PendingIntent contentIntent = PendingIntent.getActivity(MQTTService.this, 0, notifyIntent, 0);
+					notification.setLatestEventInfo(MQTTService.this, "New record", message, contentIntent);
+					MQTTService.this.manager.notify(RECORD_NOTIFICATION, notification);
+				}
 			}
 			
 		} catch (SAXException e) {
