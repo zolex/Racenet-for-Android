@@ -13,12 +13,15 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.racenet.models.Database;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import org.racenet.NewsListActivity;
+import org.racenet.RecordListActivity;
 import org.racenet.StartActivity;
 import org.racenet.R;
+import org.racenet.UserChatActivity;
 
 import com.albin.mqtt.NettyClient;
 
@@ -37,13 +40,26 @@ public class MQTTService extends Service {
 	
     private NotificationManager manager;
     private Database db;
-    private static NettyClient client;
+    public static NettyClient client;
     private Timer pinger = new Timer();
     private boolean waitingForPong = false;
     
     public static final String UPDATE_NEWS_ACTION = "org.racenet.MQTTService.updateNewsAction";
-    private final Handler broadcastHandler = new Handler();
-    private final Intent broadcastIntent = new Intent(UPDATE_NEWS_ACTION);
+    public static final String UPDATE_RECORDS_ACTION = "org.racenet.MQTTService.updateRecordsAction";
+    public static final String UPDATE_USERLIST_ACTION = "org.racenet.MQTTService.updateUserlistAction";
+    public static final String UPDATE_CHAT_ACTION = "org.racenet.MQTTService.updateChatlistAction";
+    
+    private final Handler newsBroadcastHandler = new Handler();
+    private final Intent newsBroadcastIntent = new Intent(UPDATE_NEWS_ACTION);
+    
+    private final Handler recordsBroadcastHandler = new Handler();
+    private final Intent recordsBroadcastIntent = new Intent(UPDATE_RECORDS_ACTION);
+    
+    private final Handler userlistBroadcastHandler = new Handler();
+    private final Intent userlistBroadcastIntent = new Intent(UPDATE_USERLIST_ACTION);
+    
+    private final Handler chatBroadcastHandler = new Handler();
+    private final Intent chatBroadcastIntent = new Intent(UPDATE_CHAT_ACTION);
     
     public static int SERVICE_NOTIFICATION = 1;
     public static int RECORD_NOTIFICATION = 2;
@@ -88,17 +104,19 @@ public class MQTTService extends Service {
 	
 	private boolean connect() {
 		
-        if (db.get("user_id").equals("")) {
+		String userId = db.get("user_id");
+        if (userId.equals("")) {
         	
         	return false;
         }
+        
+        int interval = Integer.parseInt(db.get("ping"));
 		
-        client = new NettyClient("android_" + db.get("user_name"));
-    	client.setKeepAlive(0);
+        client = new NettyClient("user_" + userId);
+    	client.setKeepAlive(interval / 500);
 		client.setListener(new MQTTListener(this));
     	client.connect("78.46.92.230", 1883);
     	
-    	int interval = Integer.parseInt(db.get("ping"));
 		pinger.schedule(new TimerTask() {
 			
 			@Override
@@ -129,7 +147,7 @@ public class MQTTService extends Service {
 		Log.d("MQTT", "Connected");
 		
 		client.subscribe("user_"+ db.get("user_id"));
-		client.subscribe("news");
+		client.subscribe("broadcast");
 		if(db.get("icon").equals("true")) {
 			
 			manager.notify(SERVICE_NOTIFICATION, MQTTService.getServiceNotification(getApplicationContext(), MQTTService.this));
@@ -165,6 +183,11 @@ public class MQTTService extends Service {
 		
 		String errorMessage = "";
 		
+		// ugly workaround for nettyclient sending a random character
+		if (!xml.startsWith("<")) {
+			xml = xml.substring(2);
+		}
+		
 		try {
 			
 			StringReader inStream = new StringReader(xml);
@@ -172,52 +195,74 @@ public class MQTTService extends Service {
 			DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			Document doc = builder.parse(inSource);
 			
-			if (topic.equals("news")) {
+			if (topic.equals("broadcast")) {
 				
-				if (doc.getElementsByTagName("news").getLength() == 0) {
-					
-					return;
-				}
-				
-				Node news = doc.getElementsByTagName("news").item(0);
-				
-				if (news.getChildNodes().getLength() != 2) {
-					
-					return;
-				}
-					
-				String title = news.getChildNodes().item(0).getFirstChild().getNodeValue();
-				String body = news.getChildNodes().item(1).getFirstChild().getNodeValue();
-				
-				db.addNews(title, body);
-				
-				int num = db.countNews();
-				if (num > 1) {
-					
-					title = num + " News";
-				}
-				
-				Notification notification = new Notification(R.drawable.news, null, System.currentTimeMillis());
-				notification.sound = Uri.parse(db.get("sound"));
-				notification.flags |= Notification.FLAG_AUTO_CANCEL;
-				Intent notifyIntent = new Intent(getApplicationContext(), NewsListActivity.class);
-		        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-				PendingIntent contentIntent = PendingIntent.getActivity(MQTTService.this, 0, notifyIntent, 0);
-				notification.setLatestEventInfo(MQTTService.this, "Racenet News", title, contentIntent);
-				MQTTService.this.manager.notify(NEWS_NOTIFICATION, notification);
+				if (doc.getElementsByTagName("news").getLength() > 0) {
 
-				
-		        broadcastHandler.post(new Runnable() {
-		        	
-			    	public void run() {    
-			    		
-			    		sendBroadcast(MQTTService.this.broadcastIntent);
-			    	}
-			    });
+					Node news = doc.getElementsByTagName("news").item(0);
+					if (news.getChildNodes().getLength() != 2) {
+						
+						return;
+					}
+						
+					String title = news.getChildNodes().item(0).getFirstChild().getNodeValue();
+					String body = news.getChildNodes().item(1).getFirstChild().getNodeValue();
+					
+					db.addNews(title, body);
+					
+					int num = db.countNews();
+					if (num > 1) {
+						
+						title = num + " News";
+					}
+					
+					Notification notification = new Notification(R.drawable.news, null, System.currentTimeMillis());
+					notification.sound = Uri.parse(db.get("sound"));
+					notification.flags |= Notification.FLAG_AUTO_CANCEL;
+					Intent notifyIntent = new Intent(getApplicationContext(), NewsListActivity.class);
+			        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+					PendingIntent contentIntent = PendingIntent.getActivity(MQTTService.this, 0, notifyIntent, 0);
+					notification.setLatestEventInfo(MQTTService.this, "Racenet News", title, contentIntent);
+					MQTTService.this.manager.notify(NEWS_NOTIFICATION, notification);
+	
+			        newsBroadcastHandler.post(new Runnable() {
+			        	
+				    	public void run() {    
+				    		
+				    		sendBroadcast(MQTTService.this.newsBroadcastIntent);
+				    	}
+				    });
+			        
+				} else if (doc.getElementsByTagName("userlist").getLength() > 0) {
+					
+					db.clearUsers();
+					
+					Node userlist = doc.getElementsByTagName("userlist").item(0);
+					NodeList users = userlist.getChildNodes();
+					for(int n = 0; n < users.getLength(); n++) {
+						
+						Node user = users.item(n);
+						int id = Integer.parseInt(user.getChildNodes().item(0).getFirstChild().getNodeValue());
+						String username = user.getChildNodes().item(1).getFirstChild().getNodeValue();
+						int playerId = Integer.parseInt(user.getChildNodes().item(2).getFirstChild().getNodeValue());
+						String name = user.getChildNodes().item(3).getFirstChild().getNodeValue();
+						String simplified = user.getChildNodes().item(4).getFirstChild().getNodeValue();
+						
+						db.addUser(id, username, playerId, name, simplified);
+					}
+					
+					userlistBroadcastHandler.post(new Runnable() {
+			        	
+				    	public void run() {    
+				    		
+				    		sendBroadcast(MQTTService.this.userlistBroadcastIntent);
+				    	}
+				    });
+				}
 				
 			} else { // user_x:private message
 				
-				if (doc.getElementsByTagName("record").getLength() == 1) {
+if (doc.getElementsByTagName("record").getLength() == 1) {
 					
 					Node record = doc.getElementsByTagName("record").item(0);
 					if (record.getChildNodes().getLength() != 5) {
@@ -231,23 +276,74 @@ public class MQTTService extends Service {
 					String oldPoints = record.getChildNodes().item(3).getFirstChild().getNodeValue();
 					String newPoints = record.getChildNodes().item(4).getFirstChild().getNodeValue();
 					
+					db.addRecord(player, map, Integer.parseInt(time), Integer.parseInt(oldPoints), Integer.parseInt(newPoints));
+					
 					int points = (Integer.parseInt(oldPoints) - Integer.parseInt(newPoints));
 					String message = player + " stole " + points + " points on " + map;
+					
+					int num = db.countRecords();
+					if (num > 1) {
+						
+						message = "Lost " + db.sumPoints() + "points on " + num + " maps";
+					}
 					
 					Notification notification = new Notification(R.drawable.pokal, null, System.currentTimeMillis());
 					notification.sound = Uri.parse(db.get("sound"));
 					notification.flags |= Notification.FLAG_AUTO_CANCEL;
-					Intent notifyIntent = new Intent(getApplicationContext(), StartActivity.class);
+					Intent notifyIntent = new Intent(getApplicationContext(), RecordListActivity.class);
 			        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 					PendingIntent contentIntent = PendingIntent.getActivity(MQTTService.this, 0, notifyIntent, 0);
 					notification.setLatestEventInfo(MQTTService.this, "New record", message, contentIntent);
 					MQTTService.this.manager.notify(RECORD_NOTIFICATION, notification);
+					
+					recordsBroadcastHandler.post(new Runnable() {
+			        	
+				    	public void run() {    
+				    		
+				    		sendBroadcast(MQTTService.this.recordsBroadcastIntent);
+				    	}
+				    });
+					
+				} else if (doc.getElementsByTagName("chat").getLength() == 1) {
+					
+					Node record = doc.getElementsByTagName("chat").item(0);
+					if (record.getChildNodes().getLength() != 3) {
+						
+						return;
+					}
+					
+					String userId = record.getChildNodes().item(0).getFirstChild().getNodeValue();
+					String name = record.getChildNodes().item(1).getFirstChild().getNodeValue();
+					String text = record.getChildNodes().item(2).getFirstChild().getNodeValue();
+					
+					db.addMessage(Integer.parseInt(userId), name, text);
+					
+					String message = "from " + name;
+					
+					
+					Notification notification = new Notification(R.drawable.news, null, System.currentTimeMillis());
+					notification.sound = Uri.parse(db.get("sound"));
+					notification.flags |= Notification.FLAG_AUTO_CANCEL;
+					Intent notifyIntent = new Intent(getApplicationContext(), UserChatActivity.class);
+					notifyIntent.putExtra("user_id", Integer.parseInt(userId));
+			        notifyIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+					PendingIntent contentIntent = PendingIntent.getActivity(MQTTService.this, 0, notifyIntent, 0);
+					notification.setLatestEventInfo(MQTTService.this, "New Message", message, contentIntent);
+					MQTTService.this.manager.notify(RECORD_NOTIFICATION, notification);
+					
+					chatBroadcastHandler.post(new Runnable() {
+			        	
+				    	public void run() {    
+				    		
+				    		sendBroadcast(MQTTService.this.chatBroadcastIntent);
+				    	}
+				    });
 				}
 			}
 			
 		} catch (SAXException e) {
 			
-			errorMessage = "SAXException";
+			errorMessage = xml;
 
 		} catch (IOException e) {
 			
@@ -263,6 +359,8 @@ public class MQTTService extends Service {
 		}
 		
 		if (!errorMessage.equals("")) {
+			
+			Log.d("MQTTSERVICEERROR", errorMessage);
 			
 			Notification notification = new Notification(R.drawable.error, null, System.currentTimeMillis());
 			notification.flags |= Notification.FLAG_AUTO_CANCEL;

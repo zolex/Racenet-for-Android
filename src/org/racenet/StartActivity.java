@@ -32,9 +32,11 @@ public class StartActivity extends Activity {
 	
 	private static int MENU_ITEM_LOGIN = 0;
 	private static int MENU_ITEM_LOGOUT = 1;
-	private static int MENU_ITEM_NEWS = 2;
-	private static int MENU_ITEM_SETTINGS = 3;
-	private static int MENU_ITEM_EXIT = 4;
+	private static int MENU_ITEM_USERS = 2;
+	private static int MENU_ITEM_NEWS = 3;
+	private static int MENU_ITEM_RECORDS = 4;
+	private static int MENU_ITEM_SETTINGS = 5;
+	
 	
 	@Override
     public void onCreate(Bundle savedInstanceState) {
@@ -137,13 +139,14 @@ public class StartActivity extends Activity {
 		MenuInflater inflater = getMenuInflater();
 	    inflater.inflate(R.menu.main, menu);
 	    
-	    MenuItem exit = menu.getItem(MENU_ITEM_EXIT);
-	    exit.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+	    MenuItem records = menu.getItem(MENU_ITEM_RECORDS);
+	    records.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			
-			public boolean onMenuItemClick(MenuItem arg0) {
+	    	public boolean onMenuItemClick(MenuItem arg0) {
 				
-				askExit();
-				return true;
+	    		Intent i = new Intent(StartActivity.this, RecordListActivity.class);
+			    startActivity(i);
+			    return true;
 			}
 		});
 	    
@@ -153,6 +156,17 @@ public class StartActivity extends Activity {
 			public boolean onMenuItemClick(MenuItem arg0) {
 				
 				Intent i = new Intent(StartActivity.this, NewsListActivity.class);
+			    startActivity(i);
+			    return true;
+			}
+		});
+	    
+	    MenuItem users = menu.getItem(MENU_ITEM_USERS);
+	    users.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+			
+			public boolean onMenuItemClick(MenuItem arg0) {
+				
+				Intent i = new Intent(StartActivity.this, UserListActivity.class);
 			    startActivity(i);
 			    return true;
 			}
@@ -188,6 +202,7 @@ public class StartActivity extends Activity {
 		        db.set("user_id", "");
 		        db.set("user_name", "");
 		        db.set("user_flags", "");
+		        db.clearUsers();
 		        
 		        new AlertDialog.Builder(StartActivity.this)
 			        .setMessage("Logged out.")
@@ -218,6 +233,7 @@ public class StartActivity extends Activity {
 	        	
 	        	public void onClick(DialogInterface dialog, int id) {
 	        		
+	        		//db.clearUsers();
 	        		finish();
 	            }
 	        })

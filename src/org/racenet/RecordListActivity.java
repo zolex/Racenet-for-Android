@@ -1,7 +1,7 @@
 package org.racenet;
 
 import org.racenet.models.Database;
-import org.racenet.models.NewsListAdapter;
+import org.racenet.models.RecordListAdapter;
 import org.racenet.services.MQTTService;
 
 import android.app.AlertDialog;
@@ -25,9 +25,9 @@ import android.widget.ExpandableListView;
 import android.widget.ExpandableListView.ExpandableListContextMenuInfo;
 import android.widget.Toast;
 
-public class NewsListActivity extends ExpandableListActivity {
+public class RecordListActivity extends ExpandableListActivity {
 
-	NewsListAdapter mAdapter;
+	RecordListAdapter mAdapter;
     private static int MENU_ITEM_DELETE = 0;
     private BroadcastReceiver broadcastReceiver;
     private Database db;
@@ -36,8 +36,8 @@ public class NewsListActivity extends ExpandableListActivity {
     public void onCreate(Bundle savedInstanceState) {
         
     	super.onCreate(savedInstanceState);
-    	setContentView(R.layout.newslist);
-        mAdapter = new NewsListAdapter(this);
+    	setContentView(R.layout.recordlist);
+        mAdapter = new RecordListAdapter(this);
         setListAdapter(mAdapter);
         registerForContextMenu(getExpandableListView());
         broadcastReceiver = new BroadcastReceiver() {
@@ -55,10 +55,10 @@ public class NewsListActivity extends ExpandableListActivity {
     public void onStart() {
     	
     	super.onStart();
-    	registerReceiver(broadcastReceiver, new IntentFilter(MQTTService.UPDATE_NEWS_ACTION));
-    	if(db.countNews() == 0) {
+    	registerReceiver(broadcastReceiver, new IntentFilter(MQTTService.UPDATE_RECORDS_ACTION));
+    	if(db.countRecords() == 0) {
     		
-    		Toast.makeText(NewsListActivity.this, "News list is empty", Toast.LENGTH_SHORT).show();
+    		Toast.makeText(RecordListActivity.this, "Record list is empty", Toast.LENGTH_SHORT).show();
     	}
     }
     
@@ -84,15 +84,15 @@ public class NewsListActivity extends ExpandableListActivity {
         final String title = ((TextView)info.targetView).getText().toString();
         final int groupPos = ExpandableListView.getPackedPositionGroup(info.packedPosition);       	
         
-        new AlertDialog.Builder(NewsListActivity.this)
+        new AlertDialog.Builder(RecordListActivity.this)
 	        .setMessage("Do you really want to delete '" + title + "'?")
 	        .setPositiveButton("Yes", new OnClickListener() {
 				
 				public void onClick(DialogInterface arg0, int arg1) {
 					
-					db.deleteNews((int)mAdapter.getGroupId(groupPos));
+					db.deleteRecord((int)mAdapter.getGroupId(groupPos));
 					mAdapter.notifyDataSetChanged();
-					Toast.makeText(NewsListActivity.this, "Deleted '" + title + "'", Toast.LENGTH_SHORT).show();
+					Toast.makeText(RecordListActivity.this, "Deleted '" + title + "'", Toast.LENGTH_SHORT).show();
 				}
 			})
 			.setNegativeButton("No", null)
@@ -105,7 +105,7 @@ public class NewsListActivity extends ExpandableListActivity {
     @Override
 	public boolean onPrepareOptionsMenu (Menu menu) {
 
-		if (new Database(getApplicationContext()).countNews() == 0) {
+		if (new Database(getApplicationContext()).countRecords() == 0) {
 		
 			menu.getItem(0).setEnabled(false);
 		
@@ -121,22 +121,22 @@ public class NewsListActivity extends ExpandableListActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		
 		MenuInflater inflater = getMenuInflater();
-	    inflater.inflate(R.menu.news, menu);
+	    inflater.inflate(R.menu.records, menu);
 	    
 	    MenuItem delete = menu.getItem(MENU_ITEM_DELETE);
 	    delete.setOnMenuItemClickListener(new OnMenuItemClickListener() {
 			
 			public boolean onMenuItemClick(MenuItem arg0) {
 				
-				new AlertDialog.Builder(NewsListActivity.this)
-			        .setMessage("Do you really want to delete all news?")
+				new AlertDialog.Builder(RecordListActivity.this)
+			        .setMessage("Do you really want to delete all records?")
 			        .setPositiveButton("Yes", new OnClickListener() {
 						
 						public void onClick(DialogInterface arg0, int arg1) {
 							
-							db.deleteAllNews();
+							db.deleteAllRecords();
 							mAdapter.notifyDataSetChanged();
-							Toast.makeText(NewsListActivity.this, "Deleted all news", Toast.LENGTH_SHORT).show();
+							Toast.makeText(RecordListActivity.this, "Deleted all records", Toast.LENGTH_SHORT).show();
 						}
 					})
 					.setNegativeButton("No", null)

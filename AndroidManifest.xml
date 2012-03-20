@@ -31,6 +31,21 @@
         </activity>
         
         <activity
+            android:name=".RecordListActivity"
+            android:theme="@android:style/Theme.Black.NoTitleBar" >
+        </activity>
+        
+        <activity
+            android:name=".UserListActivity"
+            android:theme="@android:style/Theme.Black.NoTitleBar" >
+        </activity>
+        
+        <activity
+            android:name=".UserChatActivity"
+            android:theme="@android:style/Theme.Black.NoTitleBar" >
+        </activity>
+        
+        <activity
             android:name=".SettingsActivity"
             android:label="Racenet Settings"
             android:theme="@android:style/Theme.Black" >
