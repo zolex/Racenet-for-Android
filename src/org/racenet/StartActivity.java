@@ -2,6 +2,7 @@ package org.racenet;
 
 import java.util.List;
 
+import org.racenet.helpers.IsServiceRunning;
 import org.racenet.models.Database;
 import org.racenet.services.MQTTService;
 import org.racenet.R;
@@ -76,22 +77,10 @@ public class StartActivity extends Activity {
                 
                 if (!userID.matches("")) {
                 	
-                	new AlertDialog.Builder(StartActivity.this)
-        		        .setMessage("Logged in as '" + username + "'.")
-        		        .setNeutralButton("OK", null)
-        		        .show();
-                	
-                	if (!StartActivity.isServiceRunning("org.racenet.services.MQTTService", getApplicationContext())) {
+                	if (!IsServiceRunning.check("org.racenet.services.MQTTService", getApplicationContext())) {
                 		
                 		startService(new Intent(StartActivity.this, MQTTService.class));
                 	}
-                	
-                } else {
-                	
-                	new AlertDialog.Builder(StartActivity.this)
-	    		        .setMessage("Log in to enable the push service.")
-	    		        .setNeutralButton("OK", null)
-	    		        .show();
                 }
         	}
 
@@ -101,19 +90,6 @@ public class StartActivity extends Activity {
 		
         ranking.loadUrl("http://www.warsow-race.net/ranking/android/num/100");
     }
-	
-	public static boolean isServiceRunning(String serviceClassName, Context context){
-		
-	    final ActivityManager activityManager = (ActivityManager)context.getSystemService(Context.ACTIVITY_SERVICE);
-	    final List<RunningServiceInfo> services = activityManager.getRunningServices(Integer.MAX_VALUE);
-	    for (RunningServiceInfo runningServiceInfo : services) {
-	    	if (runningServiceInfo.service.getClassName().equals(serviceClassName)){
-	            return true;
-	        }
-	    }
-	    return false;
-	 }
-
 	
 	@Override
 	public boolean onPrepareOptionsMenu (Menu menu) {

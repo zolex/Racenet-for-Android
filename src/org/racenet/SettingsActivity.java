@@ -1,5 +1,6 @@
 package org.racenet;
 
+import org.racenet.helpers.IsServiceRunning;
 import org.racenet.models.Database;
 import org.racenet.services.MQTTService;
 import org.racenet.R;
@@ -33,7 +34,7 @@ public class SettingsActivity extends PreferenceActivity {
 					
 					if (value.toString() == "true") {
 						
-						if (StartActivity.isServiceRunning("org.racenet.services.MQTTService", getApplicationContext())) {
+						if (IsServiceRunning.check("org.racenet.services.MQTTService", getApplicationContext())) {
 							
 					        manager.notify(MQTTService.SERVICE_NOTIFICATION,
 					        		MQTTService.getServiceNotification(getApplicationContext(), SettingsActivity.this));

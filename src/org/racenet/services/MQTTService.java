@@ -113,7 +113,7 @@ public class MQTTService extends Service {
         int interval = Integer.parseInt(db.get("ping"));
 		
         client = new NettyClient("user_" + userId);
-    	client.setKeepAlive(interval / 500);
+    	client.setKeepAlive(0);
 		client.setListener(new MQTTListener(this));
     	client.connect("78.46.92.230", 1883);
     	
@@ -321,7 +321,7 @@ if (doc.getElementsByTagName("record").getLength() == 1) {
 					String message = "from " + name;
 					
 					
-					Notification notification = new Notification(R.drawable.news, null, System.currentTimeMillis());
+					Notification notification = new Notification(R.drawable.message, null, System.currentTimeMillis());
 					notification.sound = Uri.parse(db.get("sound"));
 					notification.flags |= Notification.FLAG_AUTO_CANCEL;
 					Intent notifyIntent = new Intent(getApplicationContext(), UserChatActivity.class);
